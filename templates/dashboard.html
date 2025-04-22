@@ -16,9 +16,7 @@
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="sidebar-item active">🏠 Upload</a>
-        <a href="#" class="sidebar-item">📊 Analytics</a>
-        <a href="#" class="sidebar-item">👥 Patients</a>
-        <a href="#" class="sidebar-item">⚙ Settings</a>
+        <a href="{{url_for('model_info')}}" class="sidebar-item">📊 Model Info</a>
         <a href="{{ url_for('logout') }}" class="sidebar-item logout">🚪 Logout</a>
       </nav>
     </aside>

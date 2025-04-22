@@ -88,8 +88,9 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.utils import secure_filename
 from PIL import Image
 import os
+import time
 import numpy as np
-from tensorflow.keras.models import load_model
+import tensorflow as tf
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -98,7 +99,7 @@ app.secret_key = 'your_secret_key'  # Required for session management
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 # Load the pre-trained model
-model = load_model('model_1.h5')
+model = tf.keras.models.load_model('model_1_new.h5')
 
 # PostgreSQL database connection
 def get_db_connection():
@@ -219,17 +220,16 @@ def index():
 
     return render_template("index.html", tumor_type=tumor_type, confidence=confidence, filepath=filepath)
 
-def prepare_image(img_path):
-    """
-    Open an image file, convert to RGB, resize it to the model's expected input,
-    normalize pixel values, and add a batch dimension.
-    """
-    with Image.open(img_path).convert("RGB") as img:
-        img = img.resize((224, 224))
-        img_array = np.array(img) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
-        return img_array
+TARGET_SIZE = (224, 224)
+CLASS_LABELS = ['glioma', 'meningioma', 'notumor', 'pituitary']  # match model's training order
 
+
+def prepare_image(img_path):
+    """Preprocess the image for model prediction."""
+    with Image.open(img_path).convert("RGB") as img:
+        img = img.resize(TARGET_SIZE)
+        img_array = np.array(img) / 255.0
+        return np.expand_dims(img_array, axis=0)
 
 from datetime import datetime
 
@@ -335,15 +335,27 @@ from PIL import Image
 gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 def is_brain_mri(image_path):
     try:
-        with Image.open(image_path).convert("RGB") as img:
-            prompt = "Is this image a brain MRI scan? Answer 'yes' or 'no'."
-            response = gemini_model.generate_content([prompt, img], stream=False)
-            result = response.text.strip().lower()
-            return result.startswith("yes")
+        img = Image.open(image_path).convert("RGB")
+        prompt = "Is this image a brain MRI scan? Answer 'yes' or 'no'."
+        response = gemini_model.generate_content([prompt, img], stream=False)
+        img.close()  # manually close to avoid file lock on Windows
+        result = response.text.strip().lower()
+        return result.startswith("yes")
     except Exception as e:
-        print(f"Error verifying MRI with Gemini: {e}")
+        print(f"[MRI Verification Error] {e}")
         return False
 
+def safe_delete(filepath):
+    try:
+        time.sleep(0.1)  # slight delay helps on Windows
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    except Exception as e:
+        print(f"[Cleanup Error] Could not delete file: {e}")
+
+@app.route('/model-info')
+def model_info():
+    return render_template('model_info.html')
 
 #main functionality but an api.
 @app.route("/api/predict", methods=["POST"])
@@ -359,40 +371,30 @@ def predict_api():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Step 1: Validate the file is a brain MRI
     if not is_brain_mri(filepath):
-        try:
-            os.remove(filepath)
-        except Exception as e:
-            print(f"Failed to remove file: {e}")
+        safe_delete(filepath)
         return jsonify({"error": "The uploaded image is not a brain MRI scan."}), 400
 
     try:
-        # Step 2: Predict
-        img = prepare_image(filepath)
-        prediction = model.predict(img)
-
-        labels = {0: "No Tumor", 1: "Meningioma", 2: "Pituitary", 3: "Glioma"}
-        class_idx = np.argmax(prediction, axis=1)[0]
-        confidence = float(np.max(prediction)) * 100
-        tumor_type = labels.get(class_idx, "Unknown")
+        img_array = prepare_image(filepath)
+        prediction = model.predict(img_array)
+        
+        predicted_class_idx = np.argmax(prediction, axis=1)[0]
+        tumor_type = CLASS_LABELS[predicted_class_idx]
+        confidence = round(float(np.max(prediction)) * 100, 2)
 
         return jsonify({
             "tumor_type": tumor_type,
-            "confidence": round(confidence, 2),
+            "confidence": confidence,
             "filepath": filename
         })
 
     except Exception as e:
-        print(f"Prediction error: {e}")
+        print(f"[Prediction Error] {e}")
         return jsonify({"error": "Prediction failed"}), 500
 
     finally:
-        # Step 3: Clean up the uploaded file
-        try:
-            os.remove(filepath)
-        except Exception as e:
-            print(f"File cleanup error: {e}")
+        safe_delete(filepath)
 
 
 #bulk scan
@@ -413,7 +415,6 @@ def bulk_predict():
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             file.save(filepath)
 
-            # Check if image is a brain MRI
             if not is_brain_mri(filepath):
                 results.append({
                     "filename": filename,
@@ -421,30 +422,25 @@ def bulk_predict():
                     "confidence": 0,
                     "filepath": filename
                 })
-                try:
-                    os.remove(filepath)
-                except Exception as e:
-                    print(f"File cleanup error (non-MRI): {e}")
+                safe_delete(filepath)
                 continue
 
             try:
-                # Predict tumor type
-                img = prepare_image(filepath)
-                prediction = model.predict(img)
-                labels = {0: "No Tumor", 1: "Meningioma", 2: "Pituitary", 3: "Glioma"}
-                class_idx = int(np.argmax(prediction, axis=1)[0])
-                confidence = float(np.max(prediction)) * 100
-                tumor_type = labels.get(class_idx, "Unknown")
+                img_array = prepare_image(filepath)
+                prediction = model.predict(img_array)
+                predicted_class_idx = np.argmax(prediction, axis=1)[0]
+                tumor_type = CLASS_LABELS[predicted_class_idx]
+                confidence = round(float(np.max(prediction)) * 100, 2)
 
                 results.append({
                     "filename": filename,
                     "tumor_type": tumor_type,
-                    "confidence": round(confidence, 2),
+                    "confidence": confidence,
                     "filepath": filename
                 })
 
             except Exception as e:
-                print(f"Prediction error for {filename}: {e}")
+                print(f"[Prediction Error] {filename}: {e}")
                 results.append({
                     "filename": filename,
                     "tumor_type": "Prediction Failed",
@@ -453,13 +449,9 @@ def bulk_predict():
                 })
 
             finally:
-                try:
-                    os.remove(filepath)
-                except Exception as e:
-                    print(f"File cleanup error: {e}")
+                safe_delete(filepath)
 
     return jsonify({"results": results})
-
 
 #save result api
 @app.route("/api/save_result", methods=["POST"])

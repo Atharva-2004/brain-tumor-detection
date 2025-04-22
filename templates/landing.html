@@ -24,17 +24,17 @@
       <div class="hero-content">
         <div class="hero-text">
           <h1>Advanced MRI <span>Brain Tumor</span> Detection</h1>
-          <p>Our AI-powered platform provides accurate tumor detection and classification using state-of-the-art deep learning technology.</p>
+          <p style="color: #1f6624;">Our AI-powered platform provides accurate tumor detection and classification using state-of-the-art deep learning technology.</p>
           <div class="hero-buttons">
             <a href="{{ url_for('login') }}" class="btn btn-primary">Get Started</a>
-            <a href="/about" class="btn btn-outline">Learn More</a>
+            <a href="{{url_for('model_info')}}" class="btn btn-primary">Learn More</a>
           </div>
         </div>
         <div class="hero-image">
           <img src="/brain-model.png" alt="3D brain model visualization">
           <div class="accuracy-badge">
             <div class="status-indicator"></div>
-            <span>99.2% Detection Accuracy</span>
+            <span style="color: black;">96.64% Detection Accuracy</span>
           </div>
         </div>
       </div>
@@ -58,14 +58,14 @@
           <p>Your medical data is fully encrypted and handled with the highest privacy standards.</p>
         </div>
         <div class="feature-card">
-          <div class="icon">📊</div>
-          <h3>Detailed Reports</h3>
-          <p>Get comprehensive analysis with confidence scores and visual explanations.</p>
-        </div>
-        <div class="feature-card">
           <div class="icon">📤</div>
           <h3>Easy Upload</h3>
           <p>Simply upload MRI scans and receive instant results from our neural network.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🗂️</div>
+          <h3>Bulk Scan</h3>
+          <p>Easily upload multiple images to get all of their results at the same time</p>
         </div>
       </div>
     </div>

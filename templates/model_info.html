@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Model Info - MRI-SAGE</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
+  <style>
+    .info-section {
+      background-color: #bbeeb4;
+      padding: 3rem;
+      margin-bottom: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .info-section img {
+      width: 100%;
+      max-width: 600px;
+      margin: 1rem auto;
+      display: block;
+      border-radius: 10px;
+    }
+    figcaption {
+      font-style: italic;
+      color: #555;
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+    h1, h2 {
+      color: #2c3e50;
+    }
+    .container {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 1rem;
+      background: #6a11cb;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      background: #2575fc;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="container">
+      <h1 class="logo">MRI-SAGE</h1>
+      <nav>
+        <a href="{{ url_for('landing') }}">Home</a>
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('dashboard') }}" class="back-link">Back</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Model Info Content -->
+  <div class="container">
+    <h1 style="text-align: center;">📊 Model Information - Brain Tumor Classification</h1>
+
+    <div class="info-section">
+      <h2>1. Dataset Source</h2>
+      <p>
+        The model is trained using the 
+        <a href="https://www.kaggle.com/datasets/masoudnickparvar/brain-tumor-mri-dataset" target="_blank" style="color:blue">
+          Brain Tumor MRI Dataset from Kaggle
+        </a>, which includes MRI scans labeled into four categories: glioma, meningioma, pituitary tumor, and no tumor.
+      </p>
+    </div>
+
+    <div class="info-section">
+      <h2>2. Dataset Distribution</h2>
+      <img src="/static/class dist.jpg" alt="Training Class Distribution">
+      <figcaption>Fig. A: Sample distribution across tumor classes</figcaption>
+      <p>The dataset offers a balanced representation across categories, helping prevent model bias and ensuring reliable classification performance.</p>
+    </div>
+
+    <div class="info-section">
+      <h2>3. Model Architecture & Performance</h2>
+      <img src="/static/model summary.jpg" alt="Model Summary">
+      <img src="/static/classification report.jpg" alt="Classification Report">
+      <figcaption>Fig. B: CNN architecture and classification report</figcaption>
+      <p>
+        The CNN architecture consists of multiple convolutional and pooling layers followed by fully connected layers. The model achieves over <strong>97% accuracy</strong> on the validation set, with high precision and recall across all classes.
+      </p>
+    </div>
+
+    <div class="info-section">
+      <h2>4. Confusion Matrix</h2>
+      <img src="/static/confusion matrix.jpg" alt="Confusion Matrix">
+      <figcaption>Fig. C: Confusion matrix showing true vs predicted labels</figcaption>
+      <p>The matrix shows that the model is highly effective in differentiating between tumor types with minimal misclassifications.</p>
+    </div>
+
+    <a href="{{ url_for('dashboard') }}" class="back-link">Back</a>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2025 MRI-SAGE. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
